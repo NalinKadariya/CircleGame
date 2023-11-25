@@ -50,7 +50,8 @@ class GameServer:
                         print(f'{player_name} disconnected from the server. IP: {address[0]}:{address[1]}\n')
                         self.players.remove(player_name)
                         break
-                
+
+            # Error handling 
             except ConnectionAbortedError:
                 print(f'{address[0]}:{address[1]} disconnected abruptly.')
             except Exception as e:
