@@ -6,7 +6,7 @@ import os
 
 # other Scripts
 from information import MAX_CONNECTIONS, SERVER_PORT
-SERVER_HOST = '3.66.87.240' #IPv4 Public IP
+SERVER_HOST_CLIENT = '3.66.87.240' #IPv4 Public IP
 
 # Centered text print
 def print_centered_text(message):
@@ -14,7 +14,7 @@ def print_centered_text(message):
     columns = os.get_terminal_size().columns
     print(message.center(columns))
 
-def connect_to_server(host=SERVER_HOST, port=SERVER_PORT):
+def connect_to_server(host=SERVER_HOST_CLIENT, port=SERVER_PORT):
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # connect to the server
     client.connect((host, port))
