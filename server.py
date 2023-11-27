@@ -62,7 +62,7 @@ class GameServer:
     def start_server(self, host=SERVER_HOST, port=SERVER_PORT):
         # Define Server
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server.bind(('::', port))
+        server.bind((host, port))
 
         # Listen & Max Connections
         server.listen(MAX_CONNECTIONS)
