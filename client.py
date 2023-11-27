@@ -55,16 +55,31 @@ def connect_to_server(host=SERVER_HOST, port=SERVER_PORT):
     time.sleep(2)
     
     # simulate "Main Menu" display
-    print_centered_text("Main Menu")
-    time.sleep(2)  # Adjust the wait time as needed
+    print_centered_text("CIRCLE")
+    print(f'\n{player_name}, Welcome to CIRCLE. New Player? Type "--new" for instructions.')
 
     # Continue with the rest of your client code
     while True:
         message = input(f'{player_name}: ')
-        # Send message to server
-        client.send(message.encode('utf-8'))
+        # Check for empty message
+        
+        if message.strip() == "":
+            print("Error: Empty messages are not allowed.")
+            continue
 
-    return client
+        # Check if the message starts with '-' (ignore it)
+        if message.startswith('-'):
+            # Send the message to the server
+            client.send(message[1:].encode('utf-8'))
+        else:
+            print("Error: Invalid command.")
+            continue
+        
+        # Recive data from server and print it
+        data = client.recv(1024).decode('utf-8')
+        print(data)
+
+
 
 # Function to display centered text and clear the screen
 def display_centered_text(message):
