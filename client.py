@@ -5,7 +5,8 @@ import time
 import os
 
 # other Scripts
-from information import *
+from information import MAX_CONNECTIONS, SERVER_PORT
+SERVER_HOST = '3.66.87.240' #IPv4 Public IP
 
 # Centered text print
 def print_centered_text(message):
