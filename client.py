@@ -72,13 +72,17 @@ def connect_to_server(host=SERVER_HOST_CLIENT, port=SERVER_PORT):
             # Send the message to the server
             client.send(message[1:].encode('utf-8'))
         else:
-            print("Error: Invalid command.")
+            to_print = ("Error: Invalid command. \n")
+            for x in to_print:
+                print(x, end='', flush=True)
+                time.sleep(printSpeed)
             continue
-        
+
         # Recive data from server and print it
         data = client.recv(1024).decode('utf-8')
-        print(data)
-
+        for x in data:
+            print(x, end='', flush=True)
+            time.sleep(printSpeed)
 
 
 # Function to display centered text and clear the screen
