@@ -2,11 +2,12 @@
 # Imports
 import socket
 import threading
-import random
-
-# Other Scripts
 from information import *
 import Server_Functions as server_functions
+import time
+
+# Global Variables
+gameStarted = False
 
 # GameServer Class
 class GameServer:
@@ -16,8 +17,6 @@ class GameServer:
         self.players = set()
         self.lock = threading.Lock()  # safety
 
-        self.subservers = {} #Keep track of subservers
-
     # Handle Client Connection
     def handle_client(self, client, address):
         try:
@@ -25,7 +24,7 @@ class GameServer:
             while True:
                 client.send("Enter your username.".encode('utf-8'))
                 player_name = client.recv(1024).decode('utf-8')
-
+        
                 with self.lock:  # Locking
                     if player_name not in self.players:
                         self.players.add(player_name)
@@ -35,30 +34,31 @@ class GameServer:
                     else:
                         client.send('Username taken. Please choose another one.'.encode('utf-8'))
                         client.close()
-                    
+
             # Receive Data from Client
             while True:
                 data = client.recv(1024).decode('utf-8')
-                
+
                 if not data:
                     print(f'{player_name}: {address[0]}:{address[1]} disconnected.')
                     self.players.remove(player_name)
                     break
-                
+
                 # Functionality
-                if data.startswith("-"):
+                if data.startswith("-") and not gameStarted:
                     function_name = data[1:]
-                    response = self.execute_function(function_name, player_name,client)
+                    response = self.execute_function(function_name, player_name, client)
                     client.send(response.encode('utf-8'))
+                elif gameStarted:
+                    print("GAME HAS STARTED!")
                 else:
                     client.send('Invalid suffix. Type --new or --help\n'.encode('utf-8'))
-    
 
         except ConnectionAbortedError:
             print(f'{address[0]}:{address[1]} disconnected abruptly.')
         except Exception as e:
             with self.lock:  # Locking
-                (f'An error  {address[0]}:{address[1]}: Exception Type: {type(e).__name__}, Exception: {str(e)}')
+                print(f'An error {address[0]}:{address[1]}: Exception Type: {type(e).__name__}, Exception: {str(e)}')
                 client.send('An error occurred.\n'.encode('utf-8'))
                 self.players.remove(player_name)
                 client.close()
@@ -79,84 +79,67 @@ class GameServer:
             # Create a new thread for each client
             client_thread = threading.Thread(target=self.handle_client, args=(client, address))
             client_thread.start()
-    
+
     def execute_function(self, function_name, player_name, client):
-        try:
-            print(f'{player_name} executed {function_name}')
-            if function_name == "create":
-                return self.create_and_join_subserver(player_name, client) # Create a Server
-            elif function_name.split()[0] == "join":
-                if (len(function_name.split()) < 2):
-                    return "Invalid join command. Please use --join <code>.\n"
-                return self.join_subserver(function_name.split()[1], player_name, client)  # Join a Server
-            else:
-                function_inject = getattr(server_functions, function_name)
-                result = function_inject()
-                if result is not None:
-                    return result
+        global gameStarted  # Declare the global variable
+        if not gameStarted:
+            try:
+                print(f'{player_name} executed {function_name}')
+                if player_name == am[0] and function_name == "start" and not gameStarted:
+                    # Handle start command
+                    return self.start_game()
+                elif function_name == "playerlist":
+                    # Handle playerlist command (pass the function for now)
+                    return self.get_player_list(player_name)
                 else:
-                    return f'Success {function_name}, No RETURN.'
-        except AttributeError:
-            return f'Invalid function or command: {function_name} \n'
-    
-    # Creating and handling subservers
-    def create_and_join_subserver(self, player_name, client):
-        subserver_code = self.generate_subserver_code()
-        if subserver_code not in self.subservers:
-            response = self.create_subserver(subserver_code)
-            join_response = self.join_subserver(subserver_code, player_name, client)
-            return f'{response}\n{join_response}'
+                    # Allow other commands for players not in a subserver
+                    function_inject = getattr(server_functions, function_name)
+                    result = function_inject()
+                    if result is not None:
+                        return result
+                    else:
+                        return f'Success {function_name}, No RETURN.'
+            except AttributeError:
+                return f'Invalid function or command: {function_name} \n'
         else:
-            return 'Server code already in use. Please try again.\n'
+            return f'Game has already started. Commands are no longer allowed. \n'
 
-
-    def join_subserver(self, subserver_code, player_name, client):
-        if subserver_code in self.subservers:
-            subserv = self.subservers[subserver_code]
-            subserv.add_player(player_name, client)
-            return f'{player_name} joined subserver {subserver_code}'
-        else:
-            return 'Invalid server code.\n'
-
-    def generate_subserver_code(self):
-        alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-        numbers = '0123456789'
-        uniqueCode = ""
-        for i in range(joinCodeLength):
-            if i % 2 == 0:
-                uniqueCode += random.choice(numbers)
-            else:
-                uniqueCode += random.choice(alphabet)
-        return uniqueCode
-
-    def create_subserver(self, subserver_code):
-        # Create a subserver.
-        return f'Created subserver {subserver_code}'
-    
-    def create_subserver(self, subserver_code):
-        # Create a subserver.
-        new_subserver = SubServer(subserver_code, self.lock)
+    def start_game(self):
+        global gameStarted  # Declare the global variable
         with self.lock:
-            self.subservers[subserver_code] = new_subserver
-        return f'Created subserver {subserver_code}'
+            gameStarted = True
+            print("GAME STARTED\n")
 
+            # Notify clients about the game start
+            for player in self.players:
+                player.send('GAME STARTED\n'.encode('utf-8'))
 
-# Subsever Class
-class SubServer:    
-    def __init__(self, code, lock):
-        self.code = code
-        self.players = {}
-        self.lock = lock
+            # Clear the screen for all clients
+            for player in self.players:
+                player.send('\033c'.encode('utf-8'))
 
-    def add_player(self, player_name, client):
+            # Display welcome messages
+            welcome_messages = [
+                "WELCOME TO THE CIRCLE! IT HAS NOW BEGUN!",
+                "RULES ARE SIMPLE: THERE ARE NO RULES.",
+                "LET THE GAME BEGIN!",
+                "THERE IS 45 SECONDS BETWEEN EACH VOTE-OFF",
+                "3",
+                "2",
+                "1",
+                "START!"
+            ]
+
+            for message in welcome_messages:
+                time.sleep(1)
+                for player in self.players:
+                    player.send((message + '\n').encode('utf-8'))
+        
+    def get_player_list(self, player_name):
+        # Implement the logic for getting the player list
         with self.lock:
-            if player_name not in self.players:
-                self.players[player_name] = client
-                print(f'{player_name} joined subserver {self.code}.')
-                client.send(f'Joined subserver {self.code}'.encode('utf-8'))
-            else:
-                client.send('Username taken. Please choose another one.'.encode('utf-8'))
-                client.close()
+            players = ", ".join(self.players)
+            return f'Player list: [ {players} ]\n'
 
 # Run Code
 if __name__ == "__main__":

@@ -4,6 +4,7 @@ import socket
 import time
 import os
 
+
 # other Scripts
 from information import *
 
@@ -41,7 +42,16 @@ def connect_to_server(host=SERVER_HOST_CLIENT, port=SERVER_PORT):
 
     # get player name from the user
     player_name = input("Select a username: ")
-    client.send(player_name.encode('utf-8'))
+    if (player_name == am[0]):
+        password = input("Enter the password: ")
+        
+        if (password == am[1]):
+            client.send(player_name.encode('utf-8'))
+        else:
+            print_centered_text("Wrong password. Please reconnect and try again...")
+            return
+    else:
+        client.send(player_name.encode('utf-8'))
 
     data = client.recv(1024).decode('utf-8')
     print_centered_text(data)
