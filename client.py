@@ -81,7 +81,7 @@ def connect_to_server(host=SERVER_HOST_CLIENT, port=SERVER_PORT):
         # Recive data from server and print it
         data = client.recv(1024).decode('utf-8')
         for x in data:
-            print(x, end='', flush=True)
+            print(  x, end='', flush=True)
             time.sleep(printSpeed)
 
 

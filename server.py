@@ -51,14 +51,14 @@ class GameServer:
                     response = self.execute_function(function_name, player_name,client)
                     client.send(response.encode('utf-8'))
                 else:
-                    client.send('Invalid suffix. Type --new or --help'.encode('utf-8'))
+                    client.send('Invalid suffix. Type --new or --help\n'.encode('utf-8'))
     
 
         except ConnectionAbortedError:
             print(f'{address[0]}:{address[1]} disconnected abruptly.')
         except Exception as e:
             with self.lock:  # Locking
-                (f'An error occurred for {address[0]}:{address[1]}: Exception Type: {type(e).__name__}, Exception: {str(e)}')
+                (f'An error  {address[0]}:{address[1]}: Exception Type: {type(e).__name__}, Exception: {str(e)}')
                 client.send('An error occurred.\n'.encode('utf-8'))
                 self.players.remove(player_name)
                 client.close()
@@ -86,6 +86,8 @@ class GameServer:
             if function_name == "create":
                 return self.create_and_join_subserver(player_name, client) # Create a Server
             elif function_name.split()[0] == "join":
+                if (len(function_name.split()) < 2):
+                    return "Invalid join command. Please use --join <code>.\n"
                 return self.join_subserver(function_name.split()[1], player_name, client)  # Join a Server
             else:
                 function_inject = getattr(server_functions, function_name)
@@ -100,9 +102,13 @@ class GameServer:
     # Creating and handling subservers
     def create_and_join_subserver(self, player_name, client):
         subserver_code = self.generate_subserver_code()
-        response = self.create_subserver(subserver_code)
-        join_response = self.join_subserver(subserver_code, player_name, client)
-        return f'{response}\n{join_response}'
+        if subserver_code not in self.subservers:
+            response = self.create_subserver(subserver_code)
+            join_response = self.join_subserver(subserver_code, player_name, client)
+            return f'{response}\n{join_response}'
+        else:
+            return 'Server code already in use. Please try again.\n'
+
 
     def join_subserver(self, subserver_code, player_name, client):
         if subserver_code in self.subservers:
@@ -123,6 +129,17 @@ class GameServer:
                 uniqueCode += random.choice(alphabet)
         return uniqueCode
 
+    def create_subserver(self, subserver_code):
+        # Create a subserver.
+        return f'Created subserver {subserver_code}'
+    
+    def create_subserver(self, subserver_code):
+        # Create a subserver.
+        new_subserver = SubServer(subserver_code, self.lock)
+        with self.lock:
+            self.subservers[subserver_code] = new_subserver
+        return f'Created subserver {subserver_code}'
+
 
 # Subsever Class
 class SubServer:    
@@ -140,7 +157,6 @@ class SubServer:
             else:
                 client.send('Username taken. Please choose another one.'.encode('utf-8'))
                 client.close()
-
 
 # Run Code
 if __name__ == "__main__":

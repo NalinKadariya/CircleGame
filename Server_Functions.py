@@ -2,8 +2,8 @@
 import sys
 import os
 
-cms = ["new", "help", "join <server code>", "create"]
-descriptions = ["Introduction to the game.", "Advanced Help Menu.", "Join a game using a server code.", "Create a game."]
+cms = ["new", "help", "join <code>", "create"]
+descriptions = ["\t Introduction to the game.", "\t Advanced Help Menu.", "Join a game using a server code.", "\t Create a game."]
 
 
 # NEW PLAYER
