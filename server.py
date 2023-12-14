@@ -4,7 +4,6 @@ import socket
 import threading
 from information import *
 import Server_Functions as server_functions
-import time
 
 # Global Variables
 gameStarted = False
@@ -108,38 +107,21 @@ class GameServer:
         global gameStarted  # Declare the global variable
         with self.lock:
             gameStarted = True
+            start_message = "WELCOME TO THE CIRCLE! IT HAS NOW BEGUN!\nRULES ARE SIMPLE: THERE ARE NO RULES.\n\nLET THE GAME BEGIN! THERE IS 45 SECONDS BETWEEN EACH VOTE-OFF\n3\n2\n1\nSTART!\n"
+            self.broadcast_to_all_clients(start_message)
             print("GAME STARTED\n")
+            return 'GAME STARTED\n'
 
-            # Notify clients about the game start
-            for player in self.players:
-                player.send('GAME STARTED\n'.encode('utf-8'))
-
-            # Clear the screen for all clients
-            for player in self.players:
-                player.send('\033c'.encode('utf-8'))
-
-            # Display welcome messages
-            welcome_messages = [
-                "WELCOME TO THE CIRCLE! IT HAS NOW BEGUN!",
-                "RULES ARE SIMPLE: THERE ARE NO RULES.",
-                "LET THE GAME BEGIN!",
-                "THERE IS 45 SECONDS BETWEEN EACH VOTE-OFF",
-                "3",
-                "2",
-                "1",
-                "START!"
-            ]
-
-            for message in welcome_messages:
-                time.sleep(1)
-                for player in self.players:
-                    player.send((message + '\n').encode('utf-8'))
-        
     def get_player_list(self, player_name):
         # Implement the logic for getting the player list
         with self.lock:
             players = ", ".join(self.players)
             return f'Player list: [ {players} ]\n'
+    
+    def broadcast_to_all_clients(self, message):
+        with self.lock:
+            for player in self.players:
+                player.send(message.encode("utf-8"))
 
 # Run Code
 if __name__ == "__main__":
